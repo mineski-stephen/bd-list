@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BD List</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__main">
+    <h1 class="topbar__title">BD List</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="stamp" id="stamp"></span>
+    <button type="button" class="btn" id="toggleAll" aria-pressed="true">Collapse all</button>
+    <button type="button" class="btn btn--primary" id="refresh">
+      <span class="btn__spin" aria-hidden="true"></span><span id="refreshLabel">Refresh</span>
+    </button>
+  </div>
+</header>
+
+<div class="banner" id="banner" role="status" hidden></div>
+
+<main class="wrap" id="hoverRoot">
+
+  <div class="fatal" id="fatal" hidden></div>
+  <p class="loading" id="loading">Loading pipeline&hellip;</p>
+
+  <div class="sections" id="sections"></div>
+
+  <section class="chartblock" id="chartblock" hidden>
+    <div class="chartblock__head">
+      <h2 class="chartblock__title">Pipeline by Projected Month</h2>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chartscroll">
+      <svg id="chart" role="img" aria-label="Pipeline amount by projected month, stacked by status"></svg>
+    </div>
+  </section>
+
+</main>
+
+<div id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<script src="snapshot.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
