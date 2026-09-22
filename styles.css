@@ -5,15 +5,17 @@
    ============================================================ */
 
 :root {
-  /* --- status palette --------------------------------------- */
-  --c-won:            #15803D;  --fg-won:            #FFFFFF;  /* dark green   */
-  --c-ce:             #1D4ED8;  --fg-ce:             #FFFFFF;  /* dark blue    */
-  --c-forsub:         #60A5FA;  --fg-forsub:         #0B2545;  /* light blue   */
-  --c-projection:     #C4B5FD;  --fg-projection:     #2E1065;  /* light purple */
-  --c-exploratory:    #6D28D9;  --fg-exploratory:    #FFFFFF;  /* dark purple  */
-  --c-lost:           #DC2626;  --fg-lost:           #FFFFFF;  /* red          */
-  --c-deferred:       #9CA3AF;  --fg-deferred:       #1F2937;  /* gray         */
-  --c-other:          #64748B;  --fg-other:          #FFFFFF;
+  /* --- status palette: sampled from the sheet's own status chips ------ */
+  --c-prospect:  #C6DBE1;  --fg-prospect:  #134F5C;  /* Prospect Identified */
+  --c-outreach:  #E6CFF2;  --fg-outreach:  #53338A;  /* Outreach Started */
+  --c-discovery: #5A3286;  --fg-discovery: #FFFFFF;  /* Discovery Meeting */
+  --c-followup:  #FFC8AA;  --fg-followup:  #7A3F0C;  /* Active follow-up */
+  --c-proposal:  #0A53A8;  --fg-proposal:  #FFFFFF;  /* Proposal/Credentials Sent */
+  --c-deferred:  #E6E6E6;  --fg-deferred:  #4A4A4A;  /* Deferred/Cancelled */
+  --c-rfp:       #BFE1F6;  --fg-rfp:       #0A4A96;  /* RFP/RFQ Provided */
+  --c-won:       #11734B;  --fg-won:       #FFFFFF;  /* Won */
+  --c-lost:      #B10202;  --fg-lost:      #FFFFFF;  /* Lost */
+  --c-other:     #64748B;  --fg-other:     #FFFFFF;
 
   /* --- neutrals --------------------------------------------- */
   --bg:        #F1F5F9;
@@ -181,7 +183,7 @@ h1, h2, h3, p { margin: 0; }
   display: grid;
   grid-template-columns: 10px 1fr auto auto auto;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   padding: 11px 13px;
   cursor: pointer;
   list-style: none;                 /* kill the default disclosure triangle */
@@ -193,7 +195,9 @@ h1, h2, h3, p { margin: 0; }
 
 .card__dot { width: 10px; height: 10px; border-radius: 3px; background: var(--c-other); }
 
-.card__title { font-size: 13.5px; font-weight: 600; }
+/* long labels like "5. Proposal/Credentials Sent" wrap to two lines on a
+   narrow card; keep the leading tight so that reads as deliberate. */
+.card__title { font-size: 13.5px; font-weight: 600; line-height: 1.25; }
 
 .card__count {
   min-width: 22px;
@@ -225,22 +229,26 @@ h1, h2, h3, p { margin: 0; }
 .card--empty .card__chev { visibility: hidden; }
 
 /* per-status accents ------------------------------------------------ */
-.card--won         .card__dot { background: var(--c-won); }
-.card--ce          .card__dot { background: var(--c-ce); }
-.card--forsub      .card__dot { background: var(--c-forsub); }
-.card--projection  .card__dot { background: var(--c-projection); }
-.card--exploratory .card__dot { background: var(--c-exploratory); }
-.card--lost        .card__dot { background: var(--c-lost); }
-.card--deferred    .card__dot { background: var(--c-deferred); }
+.card--prospect  .card__dot { background: var(--c-prospect); }
+.card--outreach  .card__dot { background: var(--c-outreach); }
+.card--discovery .card__dot { background: var(--c-discovery); }
+.card--followup  .card__dot { background: var(--c-followup); }
+.card--proposal  .card__dot { background: var(--c-proposal); }
+.card--deferred  .card__dot { background: var(--c-deferred); }
+.card--rfp       .card__dot { background: var(--c-rfp); }
+.card--won       .card__dot { background: var(--c-won); }
+.card--lost      .card__dot { background: var(--c-lost); }
 
-.card--won         { border-top: 3px solid var(--c-won); }
-.card--ce          { border-top: 3px solid var(--c-ce); }
-.card--forsub      { border-top: 3px solid var(--c-forsub); }
-.card--projection  { border-top: 3px solid var(--c-projection); }
-.card--exploratory { border-top: 3px solid var(--c-exploratory); }
-.card--lost        { border-top: 3px solid var(--c-lost); }
-.card--deferred    { border-top: 3px solid var(--c-deferred); }
-.card--other       { border-top: 3px solid var(--c-other); }
+.card--prospect  { border-top: 3px solid var(--c-prospect); }
+.card--outreach  { border-top: 3px solid var(--c-outreach); }
+.card--discovery { border-top: 3px solid var(--c-discovery); }
+.card--followup  { border-top: 3px solid var(--c-followup); }
+.card--proposal  { border-top: 3px solid var(--c-proposal); }
+.card--deferred  { border-top: 3px solid var(--c-deferred); }
+.card--rfp       { border-top: 3px solid var(--c-rfp); }
+.card--won       { border-top: 3px solid var(--c-won); }
+.card--lost      { border-top: 3px solid var(--c-lost); }
+.card--other     { border-top: 3px solid var(--c-other); }
 
 /* ============================================================
    Lists
@@ -283,6 +291,30 @@ h1, h2, h3, p { margin: 0; }
 }
 .item__amount--none { font-weight: 400; color: var(--ink-3); }
 
+/* Hover-to-read: the cell clips, the inner span slides far enough to expose
+   the rest of the text, pauses, and eases back. --shift and --dur are measured
+   per cell in JS, because only it knows how far each string actually overruns.
+   Cells whose text already fits never get .is-scrolling. */
+.item__txt { white-space: nowrap; }
+
+/* Stays inline at rest: text-overflow only ellipsises text runs, never an
+   atomic inline, so an always-inline-block wrapper would silently turn the
+   ellipsis into a hard clip. It becomes inline-block only while animating,
+   because transform needs a box to act on. */
+.item__client.is-scrolling,
+.item__project.is-scrolling { text-overflow: clip; }
+
+.item__client.is-scrolling > .item__txt,
+.item__project.is-scrolling > .item__txt {
+  display: inline-block;
+  animation: cell-scroll var(--dur, 3s) ease-in-out infinite alternate;
+}
+
+@keyframes cell-scroll {
+  0%,  18% { transform: translateX(0); }
+  82%, 100% { transform: translateX(var(--shift, 0)); }
+}
+
 /* rows that actually carry a remark get a hover affordance */
 .item--note { cursor: help; }
 .item--note .item__client {
@@ -313,14 +345,16 @@ h1, h2, h3, p { margin: 0; }
 
 /* SVG segment fills read from the same tokens as the card swatches */
 .seg              { stroke: none; cursor: pointer; }
-.seg--won         { fill: var(--c-won); }
-.seg--ce          { fill: var(--c-ce); }
-.seg--forsub      { fill: var(--c-forsub); }
-.seg--projection  { fill: var(--c-projection); }
-.seg--exploratory { fill: var(--c-exploratory); }
-.seg--lost        { fill: var(--c-lost); }
-.seg--deferred    { fill: var(--c-deferred); }
-.seg--other       { fill: var(--c-other); }
+.seg--prospect  { fill: var(--c-prospect); }
+.seg--outreach  { fill: var(--c-outreach); }
+.seg--discovery { fill: var(--c-discovery); }
+.seg--followup  { fill: var(--c-followup); }
+.seg--proposal  { fill: var(--c-proposal); }
+.seg--deferred  { fill: var(--c-deferred); }
+.seg--rfp       { fill: var(--c-rfp); }
+.seg--won       { fill: var(--c-won); }
+.seg--lost      { fill: var(--c-lost); }
+.seg--other     { fill: var(--c-other); }
 .seg:hover        { filter: brightness(1.12); }
 
 .grid           { stroke: #E5E7EB; stroke-width: 1; }
@@ -369,14 +403,16 @@ h1, h2, h3, p { margin: 0; }
   border-radius: 999px;
 }
 
-.chip--won         { background: var(--c-won);         color: var(--fg-won); }
-.chip--ce          { background: var(--c-ce);          color: var(--fg-ce); }
-.chip--forsub      { background: var(--c-forsub);      color: var(--fg-forsub); }
-.chip--projection  { background: var(--c-projection);  color: var(--fg-projection); }
-.chip--exploratory { background: var(--c-exploratory); color: var(--fg-exploratory); }
-.chip--lost        { background: var(--c-lost);        color: var(--fg-lost); }
-.chip--deferred    { background: var(--c-deferred);    color: var(--fg-deferred); }
-.chip--other       { background: var(--c-other);       color: var(--fg-other); }
+.chip--prospect  { background: var(--c-prospect);  color: var(--fg-prospect); }
+.chip--outreach  { background: var(--c-outreach);  color: var(--fg-outreach); }
+.chip--discovery { background: var(--c-discovery); color: var(--fg-discovery); }
+.chip--followup  { background: var(--c-followup);  color: var(--fg-followup); }
+.chip--proposal  { background: var(--c-proposal);  color: var(--fg-proposal); }
+.chip--deferred  { background: var(--c-deferred);  color: var(--fg-deferred); }
+.chip--rfp       { background: var(--c-rfp);       color: var(--fg-rfp); }
+.chip--won       { background: var(--c-won);       color: var(--fg-won); }
+.chip--lost      { background: var(--c-lost);      color: var(--fg-lost); }
+.chip--other     { background: var(--c-other);     color: var(--fg-other); }
 
 /* ============================================================
    Narrow screens

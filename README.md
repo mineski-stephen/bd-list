@@ -36,7 +36,7 @@ Then open <http://localhost:8000>.
 One section per BD, ordered by total pipeline value, with **Unassigned** always last
 (rows whose `BD` column is blank).
 
-Each section shows a card for **all seven statuses**, always in the same order. A
+Each section shows a card for **all nine statuses**, always in the same order. A
 status with no projects still gets a card — greyed out, showing `—`. That is
 deliberate: an empty *Won* card is information.
 
@@ -44,7 +44,12 @@ Cards are **expanded by default** and show the project count and the sum. Click 
 header to collapse it, or use **Collapse all** in the top bar. Inside, projects are sorted
 by **amount, descending**; rows with no amount show `—` and sort last.
 
-Each row shows **Client · Project Name · Amount**.
+Each row shows **Client · Project Name · Amount**. Long names are trimmed with an
+ellipsis; **hover the row and any trimmed text slides sideways** far enough to show
+the rest, pauses, and eases back. Only the cells that actually overrun move — the
+distance and the duration are measured per cell, so everything travels at the same
+reading pace. Honoured for keyboard focus too, and skipped entirely under
+`prefers-reduced-motion`.
 
 ### Remarks tooltip
 
@@ -78,19 +83,26 @@ like an ordinary column chart.
 
 ## Status colours
 
-| Status | Colour | |
+Sampled from the status chips in the sheet itself, so the dashboard matches what
+people already see there.
+
+| Status | Fill | Text |
 |---|---|---|
-| Won | dark green | `#15803D` |
-| CE Submitted | dark blue | `#1D4ED8` |
-| For Submission | light blue | `#60A5FA` |
-| Projection | light purple | `#C4B5FD` |
-| Exploratory | dark purple | `#6D28D9` |
-| Lost | red | `#DC2626` |
-| Deferred/Cancelled | gray | `#9CA3AF` |
+| 1. Prospect Identified | `#C6DBE1` | `#134F5C` |
+| 2. Outreach Started | `#E6CFF2` | `#53338A` |
+| 3. Discovery Meeting | `#5A3286` | `#FFFFFF` |
+| 4. Active follow-up | `#FFC8AA` | `#7A3F0C` |
+| 5. Proposal/Credentials Sent | `#0A53A8` | `#FFFFFF` |
+| 6. Deferred/Cancelled | `#E6E6E6` | `#4A4A4A` |
+| 7. RFP/RFQ Provided | `#BFE1F6` | `#0A4A96` |
+| Won | `#11734B` | `#FFFFFF` |
+| Lost | `#B10202` | `#FFFFFF` |
 
 They are defined **once**, as custom properties at the top of `styles.css`, and read
 from there by the card swatches, the legend and the SVG segments alike. Change a hex
 there and everything follows.
+
+Cards appear in the sheet's own numbered order, with `Won` and `Lost` last.
 
 ---
 
@@ -157,9 +169,14 @@ First Contact Date, Win/Lost Date, Projected Month, Remarks`.
 parentheses mean negative; blank stays blank rather than becoming zero, so a missing
 amount never quietly counts as `0`.
 
-**Statuses** are matched case-insensitively and tolerate spacing variants
-(`Deferred / Cancelled`, `deferred`, `cancelled`). An unrecognised status is not
-dropped — it lands in an extra "Other" card and logs a console warning.
+**Statuses** carry a numbered prefix in the sheet (`1. Prospect Identified`). That
+prefix is **stripped before matching**, so renumbering the list, or dropping the
+numbers entirely, needs no code change. Matching is case-insensitive and tolerates
+spacing variants (`Deferred / Cancelled`, `Active Follow Up`). An unrecognised status
+is not dropped — it lands in an extra "Other" card and logs a console warning, which
+is what you'll see if a row still holds one of the retired statuses (`CE Submitted`,
+`For Submission`, `Projection`, `Exploratory`). They are deliberately **not** aliased
+onto the new ones, since no mapping between them is unambiguous.
 
 **Projected Month** is **year-aware**. Today the sheet holds bare abbreviations
 (`Sep`), so months sort Jan→Dec. If the column ever starts carrying years, the
@@ -177,3 +194,5 @@ and labels pick up the year once the data spans more than one. No code change ne
   several clients (BingoPlus, FUNaloMAX) legitimately appear more than once.
 - The chart re-lays itself on window resize and scrolls horizontally rather than
   squashing when there are many months.
+- Hover-to-read measures overflow at hover time, not at render time, so it stays
+  correct after the window is resized or a card is collapsed and reopened.

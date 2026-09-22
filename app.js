@@ -16,17 +16,21 @@
 
   var CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJrkTQFOO7VryCuwJRNX6wcBWvsDfG0r_goHm0QTNzIxY6q8RdNx4H_ttx0lBAzXcJS7elgOGuek1K/pub?gid=0&single=true&output=csv';
 
-  var STATUS_ORDER = ['won', 'ce', 'forsub', 'projection', 'exploratory', 'lost', 'deferred'];
+  // Pipeline order as numbered in the sheet, then the two terminal outcomes.
+  var STATUS_ORDER = ['prospect', 'outreach', 'discovery', 'followup',
+                      'proposal', 'deferred', 'rfp', 'won', 'lost'];
 
   var STATUS_LABEL = {
-    won: 'Won',
-    ce: 'CE Submitted',
-    forsub: 'For Submission',
-    projection: 'Projection',
-    exploratory: 'Exploratory',
-    lost: 'Lost',
-    deferred: 'Deferred/Cancelled',
-    other: 'Other / Unrecognised'
+    prospect:  '1. Prospect Identified',
+    outreach:  '2. Outreach Started',
+    discovery: '3. Discovery Meeting',
+    followup:  '4. Active follow-up',
+    proposal:  '5. Proposal/Credentials Sent',
+    deferred:  '6. Deferred/Cancelled',
+    rfp:       '7. RFP/RFQ Provided',
+    won:       'Won',
+    lost:      'Lost',
+    other:     'Other / Unrecognised'
   };
 
   // Statuses kept out of the chart entirely.
@@ -195,21 +199,30 @@
     return null;
   }
 
+  // Matched AFTER the leading "1. " is stripped, so the sheet can carry the
+  // numbers (it does today) or drop them later without any change here.
   var STATUS_ALIASES = {
-    'won': 'won',
-    'ce submitted': 'ce', 'ce-submitted': 'ce', 'cesubmitted': 'ce', 'ce': 'ce',
-    'for submission': 'forsub', 'for-submission': 'forsub',
-    'projection': 'projection', 'projected': 'projection',
-    'exploratory': 'exploratory', 'exploration': 'exploratory',
-    'lost': 'lost',
+    'prospect identified': 'prospect', 'prospect': 'prospect',
+    'outreach started': 'outreach', 'outreach': 'outreach',
+    'discovery meeting': 'discovery', 'discovery': 'discovery',
+    'active follow-up': 'followup', 'active follow up': 'followup',
+    'active followup': 'followup', 'follow-up': 'followup',
+    'follow up': 'followup', 'followup': 'followup',
+    'proposal/credentials sent': 'proposal', 'proposal/credentials': 'proposal',
+    'proposal sent': 'proposal', 'credentials sent': 'proposal', 'proposal': 'proposal',
     'deferred/cancelled': 'deferred', 'deferred/canceled': 'deferred',
-    'deferred': 'deferred', 'cancelled': 'deferred', 'canceled': 'deferred'
+    'deferred': 'deferred', 'cancelled': 'deferred', 'canceled': 'deferred',
+    'rfp/rfq provided': 'rfp', 'rfp/rfq': 'rfp', 'rfp provided': 'rfp',
+    'rfq provided': 'rfp',
+    'won': 'won',
+    'lost': 'lost'
   };
 
   function canonStatus(raw) {
     var s = String(raw === undefined || raw === null ? '' : raw)
       .toLowerCase().replace(/\s+/g, ' ').replace(/\s*\/\s*/g, '/').trim();
     if (!s) return 'other';
+    s = s.replace(/^\d+\s*[.):\-]?\s*/, '');   // drop the "1. " / "2)" / "3 - " prefix
     var hit = STATUS_ALIASES[s];
     if (hit) return hit;
     console.warn('[BD] Unrecognised status: "' + raw + '" - filed under "Other".');
@@ -385,6 +398,46 @@
     });
   }
 
+  /* A cell whose text can outrun it: the outer span clips, the inner one
+     is what actually slides on hover. */
+  function scrollCell(cls, text) {
+    var cell = el('span', cls);
+    cell.appendChild(el('span', 'item__txt', text));
+    return cell;
+  }
+
+  var SCROLL_SPEED = 70;   // px per second - roughly comfortable reading pace
+  var SCROLL_TRAVEL_FRAC = 0.64;  // share of the cycle spent moving; the rest pauses
+
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // On hover, any cell whose text is clipped slides far enough to show the
+  // rest, then eases back. Cells that already fit are left alone.
+  function startCellScroll(item) {
+    if (reduceMotion) return;
+    var cells = item.querySelectorAll('.item__client, .item__project');
+    Array.prototype.forEach.call(cells, function (cell) {
+      var over = cell.scrollWidth - cell.clientWidth;
+      if (over <= 1) return;
+      var dur = Math.max(1.4, (over / SCROLL_SPEED) / SCROLL_TRAVEL_FRAC);
+      cell.style.setProperty('--shift', (-over) + 'px');
+      cell.style.setProperty('--dur', dur.toFixed(2) + 's');
+      cell.classList.add('is-scrolling');
+    });
+  }
+
+  // Clear document-wide rather than per-item, so a missed mouseout can never
+  // strand a cell mid-slide.
+  function stopCellScroll() {
+    var cells = document.querySelectorAll('.is-scrolling');
+    Array.prototype.forEach.call(cells, function (cell) {
+      cell.classList.remove('is-scrolling');
+      cell.style.removeProperty('--shift');
+      cell.style.removeProperty('--dur');
+    });
+  }
+
   function buildCard(statusKey, items) {
     var empty = items.length === 0;
 
@@ -413,8 +466,8 @@
       var li = el('li', 'item' + (r.remarks ? ' item--note' : ''));
       li.setAttribute('data-rid', String(r.id));
       li.setAttribute('tabindex', '0');
-      li.appendChild(el('span', 'item__client', r.client));
-      li.appendChild(el('span', 'item__project', r.projectDisplay));
+      li.appendChild(scrollCell('item__client', r.client));
+      li.appendChild(scrollCell('item__project', r.projectDisplay));
       li.appendChild(el('span',
         'item__amount' + (r.amount === null ? ' item__amount--none' : ''),
         fmtAmount(r.amount)));
@@ -697,6 +750,8 @@
         var t = e.target.closest ? e.target.closest('[data-rid]') : null;
         if (!t || t === currentEl) return;
         currentEl = t;
+        stopCellScroll();
+        if (t.classList.contains('item')) startCellScroll(t);
         pending.x = e.clientX; pending.y = e.clientY;
         if (fillTip(t)) { showTip(); placeTip(); } else { hideTip(); }
       });
@@ -712,6 +767,7 @@
         var to = e.relatedTarget;
         if (to && to.closest && to.closest('[data-rid]') === currentEl) return;
         currentEl = null;
+        stopCellScroll();
         hideTip();
       });
     }
@@ -721,12 +777,16 @@
       var t = e.target.closest ? e.target.closest('[data-rid]') : null;
       if (!t) return;
       currentEl = t;
+      stopCellScroll();
+      if (t.classList.contains('item')) startCellScroll(t);
       if (!fillTip(t)) { hideTip(); return; }
       var r = t.getBoundingClientRect();
       pending.x = r.left + 8; pending.y = r.bottom - 4;
       showTip(); placeTip();
     });
-    root.addEventListener('focusout', function () { currentEl = null; hideTip(); });
+    root.addEventListener('focusout', function () {
+      currentEl = null; stopCellScroll(); hideTip();
+    });
 
     // Capture phase so inner scrollers are caught too.
     window.addEventListener('scroll', hideTip, true);
