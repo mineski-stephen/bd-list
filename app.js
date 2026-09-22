@@ -37,6 +37,9 @@
   var CHART_EXCLUDE = { deferred: true };
   // Statuses drawn below the zero line.
   var NEGATIVE_STATUSES = { lost: true };
+  // Statuses whose cards start collapsed - the closed-out buckets, which are
+  // bulky and rarely the thing you came to read.
+  var COLLAPSED_BY_DEFAULT = { deferred: true, lost: true };
 
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -370,9 +373,16 @@
      7. RENDER - BD SECTIONS
      ========================================================== */
 
-  // Cards start expanded. The toggle flips this, and every re-render (e.g.
-  // after Refresh) honours it, so the button never desyncs from the cards.
-  var cardsExpanded = true;
+  // 'default' opens everything except COLLAPSED_BY_DEFAULT; 'all' and 'none'
+  // are the states the Expand/Collapse button puts us in. Every re-render (e.g.
+  // after Refresh) honours the current mode, so the button never desyncs.
+  var expandMode = 'default';
+
+  function shouldOpen(statusKey, empty) {
+    if (empty || expandMode === 'none') return false;
+    if (expandMode === 'all') return true;
+    return !COLLAPSED_BY_DEFAULT[statusKey];
+  }
 
   function renderSections(groups) {
     var host = $('sections');
@@ -442,7 +452,7 @@
     var empty = items.length === 0;
 
     var card = el('details', 'card card--' + statusKey + (empty ? ' card--empty' : ''));
-    if (!empty && cardsExpanded) card.open = true;
+    if (shouldOpen(statusKey, empty)) card.open = true;
 
     var head = el('summary', 'card__head');
     head.appendChild(el('span', 'card__dot'));
@@ -895,17 +905,27 @@
       });
   }
 
+  function syncToggle() {
+    var t = $('toggleAll');
+    var open = expandMode !== 'none';
+    t.setAttribute('aria-pressed', open ? 'true' : 'false');
+    t.textContent = open ? 'Collapse all' : 'Expand all';
+  }
+
   function initControls() {
     $('refresh').addEventListener('click', function () { loadLive(true); });
 
     var toggle = $('toggleAll');
     toggle.addEventListener('click', function () {
-      cardsExpanded = toggle.getAttribute('aria-pressed') !== 'true';
+      // Always offer the opposite bulk action. Expanding from 'none' goes to
+      // 'all', which deliberately opens the default-collapsed cards too.
+      expandMode = (expandMode === 'none') ? 'all' : 'none';
+      var open = expandMode === 'all';
       var cards = document.querySelectorAll('.card:not(.card--empty)');
-      Array.prototype.forEach.call(cards, function (c) { c.open = cardsExpanded; });
-      toggle.setAttribute('aria-pressed', cardsExpanded ? 'true' : 'false');
-      toggle.textContent = cardsExpanded ? 'Collapse all' : 'Expand all';
+      Array.prototype.forEach.call(cards, function (c) { c.open = open; });
+      syncToggle();
     });
+    syncToggle();
 
     // Re-lay the chart to the new width; bands are sized in real pixels.
     window.addEventListener('resize', function () {

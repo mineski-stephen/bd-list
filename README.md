@@ -40,8 +40,11 @@ Each section shows a card for **all nine statuses**, always in the same order. A
 status with no projects still gets a card — greyed out, showing `—`. That is
 deliberate: an empty *Won* card is information.
 
-Cards are **expanded by default** and show the project count and the sum. Click a
-header to collapse it, or use **Collapse all** in the top bar. Inside, projects are sorted
+Cards are **expanded by default**, except **6. Deferred/Cancelled** and **Lost**,
+which start collapsed — they are the closed-out buckets, bulky and rarely what you
+came to read. Click a header to open or close it, or use the **Collapse all /
+Expand all** button in the top bar; expanding from there opens *every* card,
+including those two. Inside, projects are sorted
 by **amount, descending**; rows with no amount show `—` and sort last.
 
 Each row shows **Client · Project Name · Amount**. Long names are trimmed with an
@@ -154,6 +157,7 @@ Everything tweakable sits in one block at the top of `app.js`:
 | `SHOW_UNSCHEDULED_BAR` | `false`. Set `true` to add a "No Month" bar for undated projects. |
 | `CHART_EXCLUDE` | Statuses kept out of the chart. Currently `deferred`. |
 | `NEGATIVE_STATUSES` | Statuses drawn below the zero line. Currently `lost`. |
+| `COLLAPSED_BY_DEFAULT` | Statuses whose cards start closed. Currently `deferred` and `lost`. |
 | `DEFAULT_YEAR` | Year assumed for month cells that have none — only used once the sheet starts carrying years. |
 | `DEBUG_FORCE_LOST` | Set to a client name to force its rows to `Lost`. Handy for checking the negative axis while the sheet has no Lost projects. |
 
